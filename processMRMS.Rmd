@@ -132,28 +132,28 @@ rm(stack, stack_date)
 
 #### DRAFT CODE BELOW ####
 
-datetime <- list.files("/Users/megansears/Documents/MRMS/RQI/2022/test2", pattern = ".tif", full.names = F)
-
-# Extract the datetime pattern (YYYYMMDD-HHMMSS)
-datetime_str <- str_extract(datetime, "\\d{8}-\\d{6}")
-
-# Convert to datetime
-datetime_seq <- ymd_hms(gsub("-", "", datetime_str))
-
-filenames <- list.files("/Users/megansears/Documents/MRMS/RQI/2022/test2", pattern = ".tif", full.names = TRUE)
-
-# Read all raster files and stack them together
-stack <- read_stars(filenames, along = 3)
-
-# Set the datetime dimension of the stack
-stack_date <- st_set_dimensions(stack, 3, values = datetime_seq, names = "datetime")
-
-stack_date
-
-mapview(stack_date)
-
-test <- stack_date %>%
-  filter(!is.na(value))
+# datetime <- list.files("/Users/megansears/Documents/MRMS/RQI/2022/test2", pattern = ".tif", full.names = F)
+# 
+# # Extract the datetime pattern (YYYYMMDD-HHMMSS)
+# datetime_str <- str_extract(datetime, "\\d{8}-\\d{6}")
+# 
+# # Convert to datetime
+# datetime_seq <- ymd_hms(gsub("-", "", datetime_str))
+# 
+# filenames <- list.files("/Users/megansears/Documents/MRMS/RQI/2022/test2", pattern = ".tif", full.names = TRUE)
+# 
+# # Read all raster files and stack them together
+# stack <- read_stars(filenames, along = 3)
+# 
+# # Set the datetime dimension of the stack
+# stack_date <- st_set_dimensions(stack, 3, values = datetime_seq, names = "datetime")
+# 
+# stack_date
+# 
+# mapview(stack_date)
+# 
+# test <- stack_date %>%
+#   filter(!is.na(value))
 # working on code starting at stringr. realized st_crop does it to a bbox so there are NAs
 
 ```
