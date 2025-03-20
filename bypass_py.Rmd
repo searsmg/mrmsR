@@ -1,0 +1,86 @@
+---
+title: "scrape_mrms_R"
+author: "Megan Sears"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+
+library(httr)
+library(tidyverse)
+library(R.utils)
+
+```
+
+# Function
+
+```{r}
+
+download_mrms_grib2 <- function(start, end, destination, product) {
+
+  # create an empty vector of missing dates
+  missing_dates <- vector("list", length = 0)
+
+  # start w/ first timestep
+  date <- start
+  
+  url_product <- list(
+    "RQI" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/RadarQualityIndex/RadarQualityIndex_00.00_%04d%02d%02d-%02d%02d00.grib2.gz",
+    "MultiSensorQPE" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/MultiSensor_QPE_01H_Pass2/MultiSensor_QPE_01H_Pass2_00.00_%04d%02d%02d-%02d0000.grib2.gz",
+    "RadarOnlyQPE" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/RadarOnly_QPE_01H/RadarOnly_QPE_01H_00.00_%04d%02d%02d-%02d0000.grib2.gz",
+    "SurfacePrecipRate" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/PrecipRate/PrecipRate_00.00_%04d%02d%02d-%02d%02d00.grib2.gz"
+    )
+  
+    time_deltas <- list(
+    "RQI" = minutes(2),
+    "MultiSensorQPE" = hours(1),
+    "RadarOnlyQPE" = hours(1),
+    "SurfacePrecipRate" = minutes(2)
+    )
+  
+  url_pattern <- url_product[[product]]
+  time_delta <- time_deltas[[product]]
+  
+  # Loop to download grib2 for each timestep
+  while (date <= end) {
+    url <- sprintf(
+      url_pattern,
+      year(date), month(date), day(date),
+      year(date), month(date), day(date),
+      hour(date), minute(date)
+    )
+    
+    filename <- basename(url)
+    filepath <- file.path(destination, filename)
+    
+    response <- try(GET(url), silent = T)
+    
+    if (inherits(response, "try-error") || status_code(response) != 200) {
+      missing_dates <- append(missing_dates, list(date))
+    } else {
+      writeBin(content(response, "raw"), filepath)
+    }
+    
+    # Increment the date
+    date <- date + time_delta
+    
+    gunzip(filepath, 
+         remove = T,
+         overwrite = T)
+
+  }
+  
+  # Return the list of missing dates
+  return(missing_dates)
+}
+
+# test
+download_mrms_grib2(start = ymd_hm("2022-09-30 16:04"),
+                    end = ymd_hm("2022-09-30 17:04"),
+                    destination = '/Users/megansears/Documents/MRMS/RQI/2022/test2',
+                    product = "RQI")
+
+
+```
+

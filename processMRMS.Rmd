@@ -1,0 +1,193 @@
+---
+title: "mrms spatial"
+author: "Megan Sears"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = F,
+  message = F, 
+  warning  = F)
+
+# load packages
+library(tidyverse) # need
+library(stars) # need
+library(sf) # need 
+library(mapview) # need
+library(foreach) # should change PP to furrr package
+library(doParallel)
+library(tools)
+library(stringr)
+
+```
+
+# Fire boundaries
+
+```{r}
+# read in fire boundaries
+et <- st_read('/Users/megansears/Documents/Repos/post-fire_rainfall/data/GIS/etf_updatedboundary/etf_boundary.shp') %>%
+  dplyr::select(geometry)
+
+# view
+mapview(et)
+
+```
+
+```{r}
+# Path to 2 min data
+dir <- '/Users/megansears/Documents/MRMS/RQI/2022/test2'
+output_dir <- '/Users/megansears/Documents/MRMS/RQI/2022/test2'
+num_cores <- 8
+
+prep_mrms <- function(dir, output_dir, num_cores, boundary) {
+
+  # Get the list of GRIB2 files in the folder
+  files <- list.files(dir, pattern = "*.grib2", full.names = TRUE)
+
+  # parallel processing settings
+  cl <- makeCluster(num_cores)
+  registerDoParallel(cl)
+  on.exit(stopCluster(cl))
+
+  # project and crop function
+  process_file <- function(file) {
+  
+  # Read the GRIB2 file as a raster
+  r <- read_stars(file)
+  
+  # set crs
+  r <- st_set_crs(r, "+proj=longlat +datum=WGS84 +no_defs")
+
+  # make sure boundary is valid
+   boundary <- st_make_valid(boundary)
+  
+  # crop 
+  r <- st_crop(r, boundary)
+  
+  # Save the raster as .tif
+  new_file_name <- paste0(tools::file_path_sans_ext(basename(file)), "_processed.tif")
+  new_file_path <- file.path(output_dir, new_file_name)
+  write_stars(r, dsn = new_file_path, overwrite = TRUE)
+  
+  # Remove (memory fills up if not)
+  rm(r)
+}
+
+# PP with foreach
+foreach(file = files, .packages = c("stars"),
+.export = c("process_file", "boundary")) %do% {
+  tryCatch({
+    process_file(file)
+  }, error = function(e) {
+    message(paste("Error processing file:", file))
+    message("Error message:", e)
+  })
+}
+
+ message("Processing complete!")
+
+}
+
+prep_mrms(dir = dir,
+          output_dir = output_dir,
+          num_cores = 8,
+          boundary = et)
+
+```
+
+# Stack by year
+
+Don't need to run anymore
+
+```{r}
+
+# stack all the grib2
+
+# List all the files in the directory
+filenames <- list.files("/Users/megansears/Documents/MRMS/bbox_2fires/2min_2021", pattern = ".tif", full.names = TRUE)
+
+datetime <- list.files("/Users/megansears/Documents/MRMS/bbox_2fires/2min_2021", pattern = ".tif", full.names = F)
+
+timestamps <- substr(datetime, 12, 26)
+datetime_seq <- ymd_hms(timestamps) - (7 * 60 * 60)
+
+# Read all raster files and stack them together
+stack <- read_stars(filenames, along = 3)
+
+# Set the datetime dimension of the stack
+stack_date <- st_set_dimensions(stack, 3, values = datetime_seq, names = "datetime")
+
+# Filter the stack_date object by datetime
+stack2021 <- stack_date %>%
+  setNames('MI2_mmhr') %>%
+  mutate(p_mm =  MI2_mmhr*(1/30)) %>%
+  dplyr::select(-MI2_mmhr) %>%
+  filter(datetime > ymd_hms('2021-05-31 23:58:00'),
+         datetime < ymd_hms('2021-09-30 23:58:00'))
+
+rm(stack, stack_date)
+
+#### DRAFT CODE BELOW ####
+
+datetime <- list.files("/Users/megansears/Documents/MRMS/RQI/2022/test2", pattern = ".tif", full.names = F)
+
+# Extract the datetime pattern (YYYYMMDD-HHMMSS)
+datetime_str <- str_extract(datetime, "\\d{8}-\\d{6}")
+
+# Convert to datetime
+datetime_seq <- ymd_hms(gsub("-", "", datetime_str))
+
+filenames <- list.files("/Users/megansears/Documents/MRMS/RQI/2022/test2", pattern = ".tif", full.names = TRUE)
+
+# Read all raster files and stack them together
+stack <- read_stars(filenames, along = 3)
+
+# Set the datetime dimension of the stack
+stack_date <- st_set_dimensions(stack, 3, values = datetime_seq, names = "datetime")
+
+stack_date
+
+mapview(stack_date)
+
+test <- stack_date %>%
+  filter(!is.na(value))
+# working on code starting at stringr. realized st_crop does it to a bbox so there are NAs
+
+```
+
+# Filter out <0.1 mm
+
+MRMS precision is 0.1
+
+```{r}
+
+# filter less than 1
+filter_function <- function(x) {
+  x[x < 0.1] <- 0
+  return(x)
+}
+
+# Load your data
+load('./data/mrms_data/bbox_2fires/stack_2023.RData')
+
+
+stack2023_fil.1 <- st_apply(
+  stack2023,
+  MARGIN = c("x", "y", "datetime"),
+  FUN = filter_function
+)
+
+# Beep when done
+beep(sound=8)
+
+# Clean up
+rm(stack2023)
+
+save.image("./data/mrms_data/bbox_2fires/stack_2023_fil01.RData")
+rm(list = ls())
+
+```
+
