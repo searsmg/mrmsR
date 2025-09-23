@@ -1,3 +1,19 @@
+#' Download MRMS data
+#'
+#' @param start DateTime of the first timestep
+#' @param end DateTime of the last timestep
+#' @param destination Destination where the data are stored
+#' @param product MRMS product (RQI, MultiSensor QPE, Radar only QPE, SPR)
+#'
+#' @returns Returns any missing dates found during download
+#' @export
+#'
+#' @examples
+#' pullMRMS(start = ymd_hm("2025-07-03 20:00"),
+#'   end = ymd_hm("2025-07-04 23:00"),
+#'   destination = './NFork_GuadRiv/mrms_rasters',
+#'   product = "SurfacePrecipRate")
+
 pullMRMS <- function(start,
                                 end,
                                 destination,
