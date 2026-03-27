@@ -32,3 +32,5 @@ usethis::use_package("utils")
 #install()
 
 ##########################################
+
+usethis::use_readme_md()
