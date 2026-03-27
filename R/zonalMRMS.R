@@ -14,7 +14,7 @@
 zonalMRMS <- function(raster_dir,
                       output_dir,
                       boundary,
-                      n_workers = 6) {
+                      n_workers) {
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -57,7 +57,7 @@ zonalMRMS <- function(raster_dir,
       extract$catchment <- 1:nrow(extract)
     }
 
-    # ---- FIXED datetime parsing ----
+    # Datetime parsing from filename
     timestamp <- tools::file_path_sans_ext(basename(file))
     stamp <- stringr::str_extract(timestamp, "\\d{8}-\\d{6}")
 

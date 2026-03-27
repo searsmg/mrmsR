@@ -16,6 +16,7 @@ combineCSV <- function(csv_dir) {
     stop("`csv_dir` does not exist.")
   }
 
+  # Get csv list
   files <- list.files(csv_dir, pattern = "\\.csv$", full.names = TRUE)
 
   if (length(files) == 0) {
