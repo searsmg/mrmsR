@@ -26,9 +26,12 @@ The package is designed for high-volume hydroclimatic workflows and supports eff
 - Documentation is still in development
 
 ### Planned improvements:
-- Full documentation and vignettes
+- Full documentation and vignette
+- Add a reproducible example (test dataset)
 - Performance optimization for large datasets
 - Improved error handling and input validation
+- Option to pull MRMS either by catchment (boundary) or point
+- Option to summarize by max and other summary stats
 - Review by others
 
 

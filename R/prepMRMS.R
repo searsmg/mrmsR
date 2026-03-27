@@ -27,78 +27,63 @@
 #'
 #' @export
 #'
-prepMRMS <- function(dir,
-                     output_dir,
-                     num_cores,
-                     boundary) {
 
-# Directory check
-  if (!dir.exists(dir)) {
-    stop("`dir` does not exist.")
+prepMRMS <- function(dir, output_dir, num_cores, boundary) {
+
+  # Input check
+  if (!is.character(boundary)) {
+    stop("boundary must be a file path when using parallel processing")
   }
 
+  # Create output dir if needed
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
 
-  files <- list.files(dir, pattern = "\\.grib2$", full.names = TRUE)
+  # List GRIB2 files
+  files <- base::list.files(dir, pattern = "\\.grib2$", full.names = TRUE)
 
-  if (length(files) == 0) {
-    stop("No .grib2 files found in `dir`.")
-  }
+  # Set parallel plan
+  future::plan(future::multisession, workers = num_cores)
 
-# Make spatvector for terra
-  if (!inherits(boundary, "SpatVector")) {
-    boundary <- terra::vect(boundary)
-  }
-
-# Function to process grib2 files
-  process_file <- function(file) {
+  # Function to process each file
+  process_file <- function(file, boundary_path, output_dir) {
 
     r <- terra::rast(file)
 
-    # assign CRS if missing
-    if (is.na(terra::crs(r))) {
-      terra::crs(r) <- "EPSG:4326"
+    # set crs
+    terra::crs(r) <- "EPSG:4326"
+
+    b <- terra::vect(boundary_path)
+
+    # Align CRS
+    if (!terra::same.crs(r, b)) {
+      b <- terra::project(b, terra::crs(r))
     }
 
-    # Make boundary and raster have same crs
-    if (!terra::same.crs(r, boundary)) {
-      boundary_local <- terra::project(boundary, terra::crs(r))
-    } else {
-      boundary_local <- boundary
-    }
+    # Crop + mask (more robust than crop alone)
+    r <- terra::crop(r, b)
+    r <- terra::mask(r, b)
 
-    # crop + mask
-    r <- terra::crop(r, boundary)
-    r <- terra::mask(r, boundary)
+    # Output filename
+    new_file <- base::file.path(
+      output_dir,
+      paste0(tools::file_path_sans_ext(base::basename(file)), "_processed.tif")
+    )
 
-    # output name
-    new_file_name <- paste0(
-      tools::file_path_sans_ext(basename(file)),
-      "_processed.tif")
+    # Write
+    terra::writeRaster(r, new_file, overwrite = TRUE)
 
-    new_file_path <- file.path(output_dir, new_file_name)
-
-    terra::writeRaster(r, new_file_path, overwrite = TRUE)
-
-    return(NULL)
+    invisible(NULL)
   }
 
-# Set up parallel
-  future::plan(future::multisession, workers = num_cores)
-  on.exit(future::plan(future::sequential), add = TRUE)
-
-# Run in parallel
-  furrr::future_walk(
+  # Run in parallel
+  furrr::future_map(
     files,
-    ~ tryCatch(
-      process_file(.x),
-      error = function(e) {
-        message(sprintf("Error processing file: %s", .x))
-        message(e$message)
-      }
-    )
+    process_file,
+    boundary_path = boundary,
+    output_dir = output_dir,
+    .options = furrr::furrr_options(seed = TRUE)
   )
 
   message("Processing complete!")

@@ -106,4 +106,3 @@ downloadMRMS <- function(start,
   # Return the list of missing dates
   return(missing_dates)
 }
-
