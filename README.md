@@ -19,9 +19,23 @@ The package is designed for high-volume hydroclimatic workflows and supports eff
 
 ---
 
-## Installation
+### Important notes:
+- This version is **not yet stable or production-ready**
+- Function names, arguments, and outputs may change
+- No guarantee of backward compatibility at this stage
+- Documentation is still in development
 
-Install the development version from GitHub:
+### Planned improvements:
+- Full documentation and vignettes
+- Performance optimization for large datasets
+- Improved error handling and input validation
+- Review by others
 
+
+### Installation (development only):
 ```r
 devtools::install_github("yourusername/mrmsR")
+
+
+
+
