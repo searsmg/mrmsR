@@ -38,7 +38,3 @@ The package is designed for high-volume hydroclimatic workflows and supports eff
 ### Installation (development only):
 ```r
 devtools::install_github("yourusername/mrmsR")
-
-
-
-
