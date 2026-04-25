@@ -11,6 +11,7 @@
 #'     \item \code{"MultiSensorQPE"}: Multi-sensor QPE (hourly)
 #'     \item \code{"RadarOnlyQPE"}: Radar only QPE (hourly)
 #'     \item \code{"SurfacePrecipRate"}: Surface precipitation rate (2-minute resolution)
+#'     \item \code{"SHSRHeight"}: Height of Seamless Hybrid Scan Reflectivity (2-minute resolution); sourced from the NOAA MRMS AWS bucket
 #'   }
 #'
 #' @return A list of POSIXct datetimes corresponding to missing or failed downloads.
@@ -53,7 +54,8 @@ downloadMRMS <- function(start,
     "RQI" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/RadarQualityIndex/RadarQualityIndex_00.00_%04d%02d%02d-%02d%02d00.grib2.gz",
     "MultiSensorQPE" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/MultiSensor_QPE_01H_Pass2/MultiSensor_QPE_01H_Pass2_00.00_%04d%02d%02d-%02d0000.grib2.gz",
     "RadarOnlyQPE" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/RadarOnly_QPE_01H/RadarOnly_QPE_01H_00.00_%04d%02d%02d-%02d0000.grib2.gz",
-    "SurfacePrecipRate" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/PrecipRate/PrecipRate_00.00_%04d%02d%02d-%02d%02d00.grib2.gz"
+    "SurfacePrecipRate" = "http://mtarchive.geol.iastate.edu/%04d/%02d/%02d/mrms/ncep/PrecipRate/PrecipRate_00.00_%04d%02d%02d-%02d%02d00.grib2.gz",
+    "SHSRHeight" = "https://noaa-mrms-pds.s3.amazonaws.com/CONUS/SeamlessHSRHeight_00.00/%04d%02d%02d/MRMS_SeamlessHSRHeight_00.00_%04d%02d%02d-%02d%02d00.grib2.gz"
   )
 
   # Temporal resolution for each product
@@ -61,7 +63,8 @@ downloadMRMS <- function(start,
     "RQI" = lubridate::minutes(2),
     "MultiSensorQPE" = lubridate::hours(1),
     "RadarOnlyQPE" = lubridate::hours(1),
-    "SurfacePrecipRate" = lubridate::minutes(2)
+    "SurfacePrecipRate" = lubridate::minutes(2),
+    "SHSRHeight" = lubridate::minutes(2)
   )
 
   url_pattern <- url_product[[product]]
