@@ -4,7 +4,7 @@
 \alias{zonalMRMS}
 \title{Extract zonal mean using boundary from MRMS rasters}
 \usage{
-zonalMRMS(raster_dir, output_dir, boundary, n_workers = 6)
+zonalMRMS(raster_dir, output_dir, boundary, n_workers)
 }
 \arguments{
 \item{raster_dir}{Directory containing processed \code{.tif} files.}
