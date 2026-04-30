@@ -21,6 +21,7 @@ downloadMRMS(start, end, destination, product)
 \item \code{"MultiSensorQPE"}: Multi-sensor QPE (hourly)
 \item \code{"RadarOnlyQPE"}: Radar only QPE (hourly)
 \item \code{"SurfacePrecipRate"}: Surface precipitation rate (2-minute resolution)
+\item \code{"SHSRHeight"}: Height of Seamless Hybrid Scan Reflectivity (2-minute resolution); sourced from the NOAA MRMS AWS bucket
 }}
 }
 \value{
