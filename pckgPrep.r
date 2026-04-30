@@ -51,3 +51,5 @@ library(mrmsR)
 
 usethis::use_github_release()
 
+devtools::document()
+devtools::install()
