@@ -56,6 +56,7 @@ prepMRMS <- function(dir, output_dir, num_cores, boundary) {
 
   # Set parallel plan
   future::plan(future::multisession, workers = num_cores)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # Function to process each file
   process_file <- function(file, boundary_path, output_dir) {
