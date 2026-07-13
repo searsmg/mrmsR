@@ -1,10 +1,36 @@
+test_that("downloadMRMS downloads and unzips available files", {
+  skip_on_cran()
+  skip_if_offline()
 
+  dest <- withr::local_tempdir()
 
-downloadMRMS(lubridate::ymd_hm(start = '2025-01-01 02:00'),
-             lubridate::ymd_hm(end = '2025-01-01 6:00'),
-             destination = './tests/testthat',
-             product = 'RadarOnlyQPE')
+  missing <- downloadMRMS(
+    start = lubridate::ymd_hm("2025-01-01 02:00"),
+    end = lubridate::ymd_hm("2025-01-01 03:00"),
+    destination = dest,
+    product = "RadarOnlyQPE"
+  )
 
-library(terra)
-test <- rast('./tests/testthat/RadarOnly_QPE_01H_00.00_20250101-040000.grib2')
-plot(test)
+  expect_length(missing, 0)
+
+  files <- list.files(dest, pattern = "\\.grib2$")
+  expect_length(files, 2)
+})
+
+test_that("downloadMRMS records missing dates for unavailable data", {
+  skip_on_cran()
+  skip_if_offline()
+
+  dest <- withr::local_tempdir()
+
+  missing <- downloadMRMS(
+    start = lubridate::ymd_hm("2099-01-01 00:00"),
+    end = lubridate::ymd_hm("2099-01-01 00:02"),
+    destination = dest,
+    product = "SurfacePrecipRate"
+  )
+
+  expect_length(missing, 2)
+  expect_s3_class(missing[[1]], "POSIXct")
+  expect_length(list.files(dest), 0)
+})
