@@ -3,8 +3,9 @@
 \name{downloadMRMS}
 \alias{downloadMRMS}
 \title{Downloads MRMS precipitation products from the Iowa State Mesonet archive
-for a specified time range and save them locally. Files are downloaded as
-compressed \code{.grib2.gz} and automatically unzipped after download.}
+for a specified time range and save them locally. Files are downloaded
+concurrently via \code{curl::multi_download()} as compressed \code{.grib2.gz}
+and automatically unzipped after download.}
 \usage{
 downloadMRMS(start, end, destination, product)
 }
@@ -29,16 +30,17 @@ A list of POSIXct datetimes corresponding to missing or failed downloads.
 }
 \description{
 Downloads MRMS precipitation products from the Iowa State Mesonet archive
-for a specified time range and save them locally. Files are downloaded as
-compressed \code{.grib2.gz} and automatically unzipped after download.
+for a specified time range and save them locally. Files are downloaded
+concurrently via \code{curl::multi_download()} as compressed \code{.grib2.gz}
+and automatically unzipped after download.
 }
 \details{
 Data are retrieved from the Iowa State Mesonet MRMS archive:
 \url{http://mtarchive.geol.iastate.edu/}.
 
-The function attempts to download each timestep sequentially. If a file is
-missing or fails to download/unzip, the corresponding timestamp is recorded
-and returned.
+The function downloads every timestep concurrently. If a file is missing
+or fails to download/unzip, the corresponding timestamp is recorded and
+returned.
 }
 \examples{
 \dontrun{
