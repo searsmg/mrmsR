@@ -8,17 +8,19 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Imports: 
+Imports:
+    curl,
     data.table,
     dplyr,
     furrr,
     future,
-    httr,
     lubridate,
+    purrr,
     R.utils,
     stringr,
     terra,
     utils
-Suggests: 
-    testthat (>= 3.0.0)
+Suggests:
+    testthat (>= 3.0.0),
+    withr
 Config/testthat/edition: 3
