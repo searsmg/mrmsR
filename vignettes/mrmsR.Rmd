@@ -1,0 +1,144 @@
+---
+title: "Getting started with mrmsR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with mrmsR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(mrmsR)
+```
+
+## Overview
+
+`mrmsR` supports a four-step workflow for turning NOAA MRMS (Multi-Radar
+Multi-Sensor) gridded precipitation data into watershed-scale rainfall
+statistics:
+
+1. **`downloadMRMS()`** — download MRMS GRIB2 files for a time range from the
+   Iowa State Mesonet archive (or the NOAA AWS bucket, for `SHSRHeight`).
+2. **`prepMRMS()`** — project and crop the raw GRIB2 rasters to a boundary,
+   writing GeoTIFFs.
+3. **`zonalMRMS()`** — compute the zonal mean precipitation over each
+   catchment in the boundary for every raster, writing one CSV per timestep.
+4. **`combineCSV()`** — combine those per-timestep CSVs into a single,
+   datetime-sorted data frame.
+
+This vignette walks through the whole pipeline. Downloading requires a
+network connection and can produce a lot of files, so that step is shown but
+not run here. The remaining steps run on a small example dataset bundled
+with the package, so you can follow along and reproduce every output below.
+
+## Step 1: Downloading MRMS data
+
+```{r download, eval = FALSE}
+downloadMRMS(
+  start = lubridate::ymd_hm("2025-01-01 02:00"),
+  end = lubridate::ymd_hm("2025-01-01 06:00"),
+  destination = "mrms_rasters",
+  product = "RadarOnlyQPE"
+)
+```
+
+`product` controls both the data source and the temporal resolution of the
+files that get downloaded:
+
+| Product              | Resolution | Source                    |
+|----------------------|------------|----------------------------|
+| `RQI`                | 2 minutes  | Iowa State Mesonet archive |
+| `MultiSensorQPE`     | hourly     | Iowa State Mesonet archive |
+| `RadarOnlyQPE`       | hourly     | Iowa State Mesonet archive |
+| `SurfacePrecipRate`  | 2 minutes  | Iowa State Mesonet archive |
+| `SHSRHeight`         | 2 minutes  | NOAA MRMS AWS bucket       |
+
+`downloadMRMS()` returns a list of the `POSIXct` timestamps it could not
+download (for example if the archive doesn't have data for a given
+timestep). An empty list means every file in the range downloaded and
+unzipped successfully.
+
+## Example data
+
+The rest of this vignette uses a small example dataset installed with the
+package: two hourly `RadarOnlyQPE` GRIB2 files (2025-01-01 02:00 and 03:00
+UTC) and a shapefile of catchment boundaries.
+
+```{r example-data}
+grib_dir <- system.file("extdata", "grib2", package = "mrmsR")
+boundary <- system.file("extdata", "boundary", "catchments_all_lidar.shp", package = "mrmsR")
+
+list.files(grib_dir)
+```
+
+## Step 2: Cropping rasters to a boundary
+
+`prepMRMS()` reads every `.grib2` file in `dir`, assigns the WGS84 CRS,
+crops and masks it to `boundary`, and writes the result to `output_dir` as a
+GeoTIFF. It skips any file that's already been processed, so it's safe to
+rerun on a directory that's still being downloaded into.
+
+```{r prepMRMS}
+tif_dir <- file.path(tempdir(), "mrmsR-vignette-tif")
+dir.create(tif_dir, showWarnings = FALSE)
+
+prepMRMS(
+  dir = grib_dir,
+  output_dir = tif_dir,
+  num_cores = 1,
+  boundary = boundary
+)
+
+list.files(tif_dir)
+```
+
+```{r plot-raster, fig.alt = "Cropped MRMS precipitation raster over the example catchment boundary"}
+r <- terra::rast(list.files(tif_dir, full.names = TRUE)[1])
+terra::plot(r, main = names(r))
+```
+
+## Step 3: Zonal statistics per catchment
+
+`zonalMRMS()` takes the processed rasters and computes the mean
+precipitation within each catchment polygon, writing one CSV per raster to
+`output_dir`.
+
+```{r zonalMRMS}
+csv_dir <- file.path(tempdir(), "mrmsR-vignette-csv")
+dir.create(csv_dir, showWarnings = FALSE)
+
+zonalMRMS(
+  raster_dir = tif_dir,
+  output_dir = csv_dir,
+  boundary = boundary,
+  n_workers = 1
+)
+
+list.files(csv_dir)
+```
+
+```{r zonal-preview}
+head(read.csv(list.files(csv_dir, full.names = TRUE)[1]))
+```
+
+## Step 4: Combining timesteps into one time series
+
+`combineCSV()` reads every CSV in a directory and combines them into a
+single data frame, sorted by `datetime`.
+
+```{r combineCSV}
+combined <- combineCSV(csv_dir)
+
+combined
+```
+
+From here, `combined` is a normal data frame — grouping by `catchment` and
+summarizing over `datetime` with your usual `dplyr`/`tidyr` tools will get
+you catchment-level rainfall totals or hyetographs.
