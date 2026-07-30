@@ -1,28 +1,27 @@
 ---
-title: "Getting started with mrmsR"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Getting started with mrmsR}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: github_document
 ---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
 )
 ```
 
-```{r setup}
-library(mrmsR)
-```
+# mrmsR
+
+Tools for processing NOAA MRMS (Multi-Radar Multi-Sensor) gridded
+precipitation data and generating watershed-scale rainfall statistics.
 
 ## Overview
 
-`mrmsR` supports a four-step workflow for turning NOAA MRMS (Multi-Radar
-Multi-Sensor) gridded precipitation data into watershed-scale rainfall
-statistics:
+`mrmsR` supports a four-step workflow for turning MRMS gridded precipitation
+data into watershed-scale rainfall statistics:
 
 1. **`downloadMRMS()`** — download MRMS GRIB2 files for a time range from the
    Iowa State Mesonet archive (or the NOAA AWS bucket, for `SHSRHeight`).
@@ -33,12 +32,32 @@ statistics:
 4. **`combineCSV()`** — combine those per-timestep CSVs into a single,
    datetime-sorted data frame.
 
-This vignette walks through the whole pipeline. Downloading requires a
-network connection and can produce a lot of files, so that step is shown but
-not run here. The remaining steps run on a small example dataset bundled
-with the package, so you can follow along and reproduce every output below.
+The package is designed for high-volume hydroclimatic workflows and supports
+efficient batch and parallel processing.
 
-## Step 1: Downloading MRMS data
+## Installation
+
+`mrmsR` is only available on GitHub. Install it, with the vignette built,
+using [pak](https://pak.r-lib.org/):
+
+``` r
+# install.packages("pak")
+pak::pak("searsmg/mrmsR")
+```
+
+## Example
+
+The example below runs the full pipeline. Downloading requires a network
+connection and can produce a lot of files, so that step is shown but not
+run here. The remaining steps run on a small example dataset bundled with
+the package (also used in `vignette("mrmsR")`), so every output below is
+reproducible.
+
+```{r setup}
+library(mrmsR)
+```
+
+### Step 1: Downloading MRMS data
 
 ```{r download, eval = FALSE}
 downloadMRMS(
@@ -53,7 +72,7 @@ downloadMRMS(
 files that get downloaded:
 
 | Product              | Resolution | Source                    |
-|----------------------|------------|----------------------------|
+|-----------------------|------------|----------------------------|
 | `RQI`                | 2 minutes  | Iowa State Mesonet archive |
 | `MultiSensorQPE`     | hourly     | Iowa State Mesonet archive |
 | `RadarOnlyQPE`       | hourly     | Iowa State Mesonet archive |
@@ -61,15 +80,10 @@ files that get downloaded:
 | `SHSRHeight`         | 2 minutes  | NOAA MRMS AWS bucket       |
 
 `downloadMRMS()` returns a list of the `POSIXct` timestamps it could not
-download (for example if the archive doesn't have data for a given
-timestep). An empty list means every file in the range downloaded and
+download. An empty list means every file in the range downloaded and
 unzipped successfully.
 
-## Example data
-
-The rest of this vignette uses a small example dataset installed with the
-package: two hourly `RadarOnlyQPE` GRIB2 files (2025-01-01 02:00 and 03:00
-UTC) and a shapefile of catchment boundaries.
+### Example data
 
 ```{r example-data}
 grib_dir <- system.file("extdata", "grib2", package = "mrmsR")
@@ -78,15 +92,10 @@ boundary <- system.file("extdata", "boundary", "catchments_all_lidar.shp", packa
 list.files(grib_dir)
 ```
 
-## Step 2: Cropping rasters to a boundary
-
-`prepMRMS()` reads every `.grib2` file in `dir`, assigns the WGS84 CRS,
-crops and masks it to `boundary`, and writes the result to `output_dir` as a
-GeoTIFF. It skips any file that's already been processed, so it's safe to
-rerun on a directory that's still being downloaded into.
+### Step 2: Cropping rasters to a boundary
 
 ```{r prepMRMS, warning = FALSE}
-tif_dir <- file.path(tempdir(), "mrmsR-vignette-tif")
+tif_dir <- file.path(tempdir(), "mrmsR-readme-tif")
 dir.create(tif_dir, showWarnings = FALSE)
 
 prepMRMS(
@@ -99,19 +108,15 @@ prepMRMS(
 list.files(tif_dir)
 ```
 
-```{r plot-raster, fig.alt = "Cropped MRMS precipitation raster over the example catchment boundary"}
+```{r plot-raster}
 r <- terra::rast(list.files(tif_dir, full.names = TRUE)[1])
 terra::plot(r, main = names(r))
 ```
 
-## Step 3: Zonal statistics per catchment
-
-`zonalMRMS()` takes the processed rasters and computes the mean
-precipitation within each catchment polygon, writing one CSV per raster to
-`output_dir`.
+### Step 3: Zonal statistics per catchment
 
 ```{r zonalMRMS}
-csv_dir <- file.path(tempdir(), "mrmsR-vignette-csv")
+csv_dir <- file.path(tempdir(), "mrmsR-readme-csv")
 dir.create(csv_dir, showWarnings = FALSE)
 
 zonalMRMS(
@@ -124,14 +129,7 @@ zonalMRMS(
 list.files(csv_dir)
 ```
 
-```{r zonal-preview}
-head(read.csv(list.files(csv_dir, full.names = TRUE)[1]))
-```
-
-## Step 4: Combining timesteps into one time series
-
-`combineCSV()` reads every CSV in a directory and combines them into a
-single data frame, sorted by `datetime`.
+### Step 4: Combining timesteps into one time series
 
 ```{r combineCSV}
 combined <- combineCSV(csv_dir)
@@ -142,3 +140,19 @@ combined
 From here, `combined` is a normal data frame — grouping by `catchment` and
 summarizing over `datetime` with your usual `dplyr`/`tidyr` tools will get
 you catchment-level rainfall totals or hyetographs.
+
+See `vignette("mrmsR")` for more detail on each step.
+
+## Project status
+
+- This package is **not yet stable or production-ready**
+- Function names, arguments, and outputs may change
+- No guarantee of backward compatibility at this stage
+
+### Planned improvements
+
+- Performance optimization for large datasets
+- Improved error handling and input validation
+- Option to pull MRMS either by catchment (boundary) or point
+- Option to summarize by max and other summary stats
+- Review by others
