@@ -5,10 +5,17 @@
 #'
 #' @param raster_dir Directory containing processed `.tif` files.
 #' @param output_dir Directory to write CSV outputs.
-#' @param boundary Path to boundary SpatVector object.
+#' @param boundary Character. File path to the boundary (e.g., a shapefile).
+#'   A path is required because `SpatVector` objects can't be sent to
+#'   parallel workers; each worker reads the boundary itself.
 #' @param n_workers Number of parallel workers.
 #'
 #' @return Invisibly returns NULL
+#'
+#' @details
+#' One CSV is written per raster, named
+#' `extract_<year>_<doy>_<hour>_<min>.csv` from the timestamp in the raster
+#' file name.
 #' @export
 
 zonalMRMS <- function(raster_dir,
@@ -16,23 +23,28 @@ zonalMRMS <- function(raster_dir,
                       boundary,
                       n_workers) {
 
+  # Input check
+  if (!is.character(boundary)) {
+    stop("boundary must be a file path when using parallel processing")
+  }
+
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
 
   files <- list.files(raster_dir, pattern = "\\.tif$", full.names = TRUE)
 
-  # Load boundary once
-  b <- terra::vect(boundary)
+  # Parallel plan, restoring the caller's plan on exit
+  old_plan <- future::plan(future::multisession, workers = n_workers)
+  on.exit(future::plan(old_plan), add = TRUE)
 
-  # Parallel plan
-  future::plan(future::multisession, workers = n_workers)
-  on.exit(future::plan(future::sequential), add = TRUE)
-
-  furrr::future_walk(files, function(file) {
+  furrr::future_walk(files, function(file, boundary_path) {
 
     r <- terra::rast(file)
     names(r) <- "p_mmhr"
+
+    # Read boundary in each worker; SpatVectors can't be serialized
+    b <- terra::vect(boundary_path)
 
     # CRS handling
     b_local <- if (!terra::same.crs(r, b)) {
@@ -67,6 +79,7 @@ zonalMRMS <- function(raster_dir,
       tz = "UTC"
     )
 
+    extract$year <- lubridate::year(extract$datetime)
     extract$doy  <- lubridate::yday(extract$datetime)
     extract$hour <- lubridate::hour(extract$datetime)
     extract$min  <- lubridate::minute(extract$datetime)
@@ -74,14 +87,14 @@ zonalMRMS <- function(raster_dir,
     # Output file
     out_file <- file.path(
       output_dir,
-      paste0("extract_", extract$doy[1], "_",
+      paste0("extract_", extract$year[1], "_", extract$doy[1], "_",
              sprintf("%02d", extract$hour[1]), "_",
              sprintf("%02d", extract$min[1]), ".csv")
     )
 
     utils::write.csv(extract, out_file, row.names = FALSE)
 
-  })
+  }, boundary_path = boundary, .options = furrr::furrr_options(seed = TRUE))
 
   message("Zonal stats complete")
   invisible(NULL)

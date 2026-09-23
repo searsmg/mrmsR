@@ -11,7 +11,9 @@ zonalMRMS(raster_dir, output_dir, boundary, n_workers)
 
 \item{output_dir}{Directory to write CSV outputs.}
 
-\item{boundary}{Path to boundary SpatVector object.}
+\item{boundary}{Character. File path to the boundary (e.g., a shapefile).
+A path is required because \code{SpatVector} objects can't be sent to
+parallel workers; each worker reads the boundary itself.}
 
 \item{n_workers}{Number of parallel workers.}
 }
@@ -21,4 +23,9 @@ Invisibly returns NULL
 \description{
 Computes zonal mean precipitation for each raster file over the boundary
 and writes results as CSV files.
+}
+\details{
+One CSV is written per raster, named
+\verb{extract_<year>_<doy>_<hour>_<min>.csv} from the timestamp in the raster
+file name.
 }
