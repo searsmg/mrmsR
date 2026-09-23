@@ -68,3 +68,44 @@ test_that("zonalMRMS restores the caller's future plan", {
 
   expect_s3_class(future::plan(), "multicore")
 })
+
+test_that("zonalMRMS writes the full timestamp for midnight rasters", {
+  raster_dir <- withr::local_tempdir()
+  output_dir <- withr::local_tempdir()
+
+  tif <- list.files(test_path("processedTIF"), full.names = TRUE)[1]
+  file.copy(tif, file.path(raster_dir, "RadarOnly_QPE_01H_00.00_20250102-000000_processed.tif"))
+
+  zonalMRMS(raster_dir, output_dir, test_path("catchments_all_lidar.shp"), n_workers = 1)
+
+  df <- utils::read.csv(list.files(output_dir, full.names = TRUE))
+  expect_equal(unique(df$datetime), "2025-01-02 00:00:00")
+})
+
+test_that("zonalMRMS labels catchments with id_col", {
+  output_dir <- withr::local_tempdir()
+  boundary <- test_path("catchments_all_lidar.shp")
+
+  zonalMRMS(test_path("processedTIF"), output_dir, boundary, n_workers = 1, id_col = "ID")
+
+  df <- utils::read.csv(list.files(output_dir, full.names = TRUE)[1])
+  expect_equal(df$catchment, terra::vect(boundary)$ID)
+})
+
+test_that("zonalMRMS defaults to the site column", {
+  output_dir <- withr::local_tempdir()
+  boundary <- test_path("catchments_all_lidar.shp")
+
+  zonalMRMS(test_path("processedTIF"), output_dir, boundary, n_workers = 1)
+
+  df <- utils::read.csv(list.files(output_dir, full.names = TRUE)[1])
+  expect_equal(df$catchment, terra::vect(boundary)$site)
+})
+
+test_that("zonalMRMS errors when id_col isn't in the boundary", {
+  expect_error(
+    zonalMRMS(test_path("processedTIF"), withr::local_tempdir(),
+              test_path("catchments_all_lidar.shp"), n_workers = 1, id_col = "nope"),
+    "is not a column in the boundary"
+  )
+})

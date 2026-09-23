@@ -4,7 +4,7 @@
 \alias{zonalMRMS}
 \title{Extract zonal mean using boundary from MRMS rasters}
 \usage{
-zonalMRMS(raster_dir, output_dir, boundary, n_workers)
+zonalMRMS(raster_dir, output_dir, boundary, n_workers, id_col = NULL)
 }
 \arguments{
 \item{raster_dir}{Directory containing processed \code{.tif} files.}
@@ -16,6 +16,11 @@ A path is required because \code{SpatVector} objects can't be sent to
 parallel workers; each worker reads the boundary itself.}
 
 \item{n_workers}{Number of parallel workers.}
+
+\item{id_col}{Character or \code{NULL}. Name of the boundary attribute used to
+label each catchment in the \code{catchment} column. If \code{NULL} (the default),
+uses \code{site} when the boundary has it, otherwise numbers the catchments
+\verb{1, 2, ...} in boundary order.}
 }
 \value{
 Invisibly returns NULL

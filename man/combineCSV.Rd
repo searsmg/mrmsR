@@ -15,5 +15,6 @@ A combined data.frame sorted by datetime.
 \description{
 Reads all CSV files produced by the boundary extraction and combines them
 into a single data frame sorted by datetime.
-Special case: files ending with "0_0.csv" will have "00:00:00" added to datetime if missing.
+Timestamps with no time (e.g., midnight values written as a date only)
+are read as 00:00:00 UTC. Older \verb{m/d/y H:M:S} timestamps are also supported.
 }

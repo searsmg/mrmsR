@@ -19,7 +19,7 @@ test_that("combineCSV combines and sorts extraction CSVs by datetime", {
   expect_true(!is.unsorted(result$datetime))
 })
 
-test_that("combineCSV appends midnight time for date-only '0_0.csv' files", {
+test_that("combineCSV reads old m/d/y date-only timestamps as midnight", {
   csv_dir <- withr::local_tempdir()
   writeLines(
     c('"ID","p_mmhr","catchment","datetime"', '1,0,"test","01/02/25"'),
@@ -29,4 +29,23 @@ test_that("combineCSV appends midnight time for date-only '0_0.csv' files", {
   result <- combineCSV(csv_dir)
 
   expect_equal(result$datetime, as.POSIXct("2025-01-02 00:00:00", tz = "UTC"))
+})
+
+test_that("combineCSV reads date-only ISO timestamps as midnight", {
+  csv_dir <- withr::local_tempdir()
+  writeLines(
+    c('"ID","p_mmhr","catchment","datetime"', '1,0,"test",2025-01-02'),
+    file.path(csv_dir, "extract_2025_2_00_00.csv")
+  )
+  writeLines(
+    c('"ID","p_mmhr","catchment","datetime"', '1,0,"test",2025-01-01 23:00:00'),
+    file.path(csv_dir, "extract_2025_1_23_00.csv")
+  )
+
+  result <- combineCSV(csv_dir)
+
+  expect_equal(
+    result$datetime,
+    as.POSIXct(c("2025-01-01 23:00:00", "2025-01-02 00:00:00"), tz = "UTC")
+  )
 })
