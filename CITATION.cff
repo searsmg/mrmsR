@@ -10,6 +10,7 @@ authors:
   - family-names: Sears
     given-names: Megan
 version: 0.1.0
+doi: 10.5281/zenodo.22908308
 license: MIT
 repository-code: "https://github.com/searsmg/mrmsR"
 keywords:
