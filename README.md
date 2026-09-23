@@ -3,6 +3,10 @@
 
 # mrmsR
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/searsmg/mrmsR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/searsmg/mrmsR/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 Tools for processing NOAA MRMS (Multi-Radar Multi-Sensor) gridded
 precipitation data and generating watershed-scale rainfall statistics.
 
