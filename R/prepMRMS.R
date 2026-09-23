@@ -7,7 +7,9 @@
 #' @param dir Character. Directory containing MRMS `.grib2` files.
 #' @param output_dir Character. Directory where processed `.tif` files will be saved.
 #' @param num_cores Integer. Number of cores to use for parallel processing.
-#' @param boundary `SpatVector` object defining the spatial extent to crop to.
+#' @param boundary Character. File path to the boundary (e.g., a shapefile)
+#'   defining the spatial extent to crop to. A path is required because
+#'   `SpatVector` objects can't be sent to parallel workers.
 #'
 #' @return Invisibly returns `NULL`. Writes processed raster files to `output_dir`.
 #'
@@ -21,7 +23,7 @@
 #'   dir = "path/to/grib2_files",
 #'   output_dir = "path/to/output",
 #'   num_cores = 4,
-#'   boundary = spatvector boundary
+#'   boundary = "path/to/boundary.shp"
 #' )
 #' }
 #'
@@ -54,9 +56,9 @@ prepMRMS <- function(dir, output_dir, num_cores, boundary) {
 
   message(sprintf("%d files to process.", length(files)))
 
-  # Set parallel plan
-  future::plan(future::multisession, workers = num_cores)
-  on.exit(future::plan(future::sequential), add = TRUE)
+  # Set parallel plan, restoring the caller's plan on exit
+  old_plan <- future::plan(future::multisession, workers = num_cores)
+  on.exit(future::plan(old_plan), add = TRUE)
 
   # Function to process each file
   process_file <- function(file, boundary_path, output_dir) {

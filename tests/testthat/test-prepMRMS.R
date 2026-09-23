@@ -45,3 +45,16 @@ test_that("prepMRMS requires boundary to be a file path", {
     "boundary must be a file path"
   )
 })
+
+test_that("prepMRMS restores the caller's future plan", {
+  input_dir <- withr::local_tempdir()
+  file.copy(list.files(test_path(), pattern = "\\.grib2$", full.names = TRUE)[1], input_dir)
+
+  withr::defer(future::plan(future::sequential))
+  future::plan(future::multicore, workers = 1)
+
+  prepMRMS(input_dir, withr::local_tempdir(), num_cores = 1,
+           boundary = test_path("catchments_all_lidar.shp"))
+
+  expect_s3_class(future::plan(), "multicore")
+})

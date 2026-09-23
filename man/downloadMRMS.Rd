@@ -14,7 +14,8 @@ downloadMRMS(start, end, destination, product)
 
 \item{end}{POSIXct. End datetime.}
 
-\item{destination}{Character. Directory where downloaded files will be saved.}
+\item{destination}{Character. Directory where downloaded files will be saved.
+Created if it doesn't exist.}
 
 \item{product}{Character. MRMS product to download. Options include:
 \itemize{

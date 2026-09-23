@@ -13,7 +13,9 @@ prepMRMS(dir, output_dir, num_cores, boundary)
 
 \item{num_cores}{Integer. Number of cores to use for parallel processing.}
 
-\item{boundary}{\code{SpatVector} object defining the spatial extent to crop to.}
+\item{boundary}{Character. File path to the boundary (e.g., a shapefile)
+defining the spatial extent to crop to. A path is required because
+\code{SpatVector} objects can't be sent to parallel workers.}
 }
 \value{
 Invisibly returns \code{NULL}. Writes processed raster files to \code{output_dir}.
@@ -33,7 +35,7 @@ prepMRMS(
   dir = "path/to/grib2_files",
   output_dir = "path/to/output",
   num_cores = 4,
-  boundary = spatvector boundary
+  boundary = "path/to/boundary.shp"
 )
 }
 

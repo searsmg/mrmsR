@@ -6,6 +6,7 @@
 #' @param start POSIXct. Start datetime (e.g., from lubridate::ymd_hm).
 #' @param end POSIXct. End datetime.
 #' @param destination Character. Directory where downloaded files will be saved.
+#'   Created if it doesn't exist.
 #' @param product Character. MRMS product to download. Options include:
 #'   \itemize{
 #'     \item \code{"RQI"}: Radar Quality Index (2-minute resolution)
@@ -60,6 +61,12 @@ downloadMRMS <- function(start,
     "SurfacePrecipRate" = lubridate::minutes(2),
     "SHSRHeight" = lubridate::minutes(2)
   )
+
+  product <- match.arg(product, names(url_product))
+
+  if (!dir.exists(destination)) {
+    dir.create(destination, recursive = TRUE)
+  }
 
   url_pattern <- url_product[[product]]
   time_delta <- time_deltas[[product]]
