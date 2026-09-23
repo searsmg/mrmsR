@@ -10,7 +10,8 @@ and automatically unzipped after download.}
 downloadMRMS(start, end, destination, product)
 }
 \arguments{
-\item{start}{POSIXct. Start datetime (e.g., from lubridate::ymd_hm).}
+\item{start}{POSIXct. Start datetime (e.g., from lubridate::ymd_hm). Any
+time zone works; it's converted to UTC to match MRMS file names.}
 
 \item{end}{POSIXct. End datetime.}
 
@@ -27,7 +28,8 @@ Created if it doesn't exist.}
 }}
 }
 \value{
-A list of POSIXct datetimes corresponding to missing or failed downloads.
+A list of POSIXct datetimes (in UTC) corresponding to missing or
+failed downloads.
 }
 \description{
 Downloads MRMS precipitation products from the Iowa State Mesonet archive
