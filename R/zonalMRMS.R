@@ -9,6 +9,10 @@
 #'   A path is required because `SpatVector` objects can't be sent to
 #'   parallel workers; each worker reads the boundary itself.
 #' @param n_workers Number of parallel workers.
+#' @param id_col Character or `NULL`. Name of the boundary attribute used to
+#'   label each catchment in the `catchment` column. If `NULL` (the default),
+#'   uses `site` when the boundary has it, otherwise numbers the catchments
+#'   `1, 2, ...` in boundary order.
 #'
 #' @return Invisibly returns NULL
 #'
@@ -21,11 +25,21 @@
 zonalMRMS <- function(raster_dir,
                       output_dir,
                       boundary,
-                      n_workers) {
+                      n_workers,
+                      id_col = NULL) {
 
   # Input check
   if (!is.character(boundary)) {
     stop("boundary must be a file path when using parallel processing")
+  }
+
+  # Check the ID column up front rather than inside each worker
+  boundary_cols <- names(terra::vect(boundary, what = "attributes"))
+
+  if (is.null(id_col)) {
+    if ("site" %in% boundary_cols) id_col <- "site"
+  } else if (!id_col %in% boundary_cols) {
+    stop(sprintf("`id_col` \"%s\" is not a column in the boundary.", id_col))
   }
 
   if (!dir.exists(output_dir)) {
@@ -38,7 +52,7 @@ zonalMRMS <- function(raster_dir,
   old_plan <- future::plan(future::multisession, workers = n_workers)
   on.exit(future::plan(old_plan), add = TRUE)
 
-  furrr::future_walk(files, function(file, boundary_path) {
+  furrr::future_walk(files, function(file, boundary_path, id_col) {
 
     r <- terra::rast(file)
     names(r) <- "p_mmhr"
@@ -62,11 +76,11 @@ zonalMRMS <- function(raster_dir,
       touches = TRUE
     )
 
-    # Catchment ID (adjust if your field name differs)
-    if ("site" %in% names(b_local)) {
-      extract$catchment <- b_local$site
+    # Catchment ID
+    if (!is.null(id_col)) {
+      extract$catchment <- b_local[[id_col]][[1]]
     } else {
-      extract$catchment <- 1:nrow(extract)
+      extract$catchment <- seq_len(nrow(extract))
     }
 
     # Datetime parsing from filename
@@ -92,9 +106,12 @@ zonalMRMS <- function(raster_dir,
              sprintf("%02d", extract$min[1]), ".csv")
     )
 
+    # Write the full timestamp; write.csv drops the time at midnight otherwise
+    extract$datetime <- format(extract$datetime, "%Y-%m-%d %H:%M:%S")
+
     utils::write.csv(extract, out_file, row.names = FALSE)
 
-  }, boundary_path = boundary, .options = furrr::furrr_options(seed = TRUE))
+  }, boundary_path = boundary, id_col = id_col, .options = furrr::furrr_options(seed = TRUE))
 
   message("Zonal stats complete")
   invisible(NULL)

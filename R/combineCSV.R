@@ -2,7 +2,8 @@
 #'
 #' Reads all CSV files produced by the boundary extraction and combines them
 #' into a single data frame sorted by datetime.
-#' Special case: files ending with "0_0.csv" will have "00:00:00" added to datetime if missing.
+#' Timestamps with no time (e.g., midnight values written as a date only)
+#' are read as 00:00:00 UTC. Older `m/d/y H:M:S` timestamps are also supported.
 #'
 #' @param csv_dir Character. Directory containing watershed CSV files.
 #'
@@ -33,20 +34,20 @@ combineCSV <- function(csv_dir) {
 
     if ("datetime" %in% names(dt)) {
 
-      # Special case: filename ends with "0_0.csv" and datetime has no time
-      if (grepl("0_0\\.csv$", file)) {
-        # Check if datetime parsing fails (likely only dates)
-        test <- try(as.POSIXct(dt$datetime, format = "%m/%d/%y %H:%M:%S"), silent = TRUE)
-        if (inherits(test, "try-error") || all(is.na(test))) {
-          dt$datetime <- paste0(dt$datetime, " 00:00:00")
-        }
-      }
+      if (is.character(dt$datetime)) {
+        # Older m/d/y format; midnight values may have been written without a time
+        no_time <- !grepl(":", dt$datetime)
+        dt$datetime[no_time] <- paste0(dt$datetime[no_time], " 00:00:00")
 
-      dt$datetime <- as.POSIXct(
-        dt$datetime,
-        format = "%m/%d/%y %H:%M:%S",
-        tz = "UTC"
-      )
+        dt$datetime <- as.POSIXct(
+          dt$datetime,
+          format = "%m/%d/%y %H:%M:%S",
+          tz = "UTC"
+        )
+      } else {
+        # fread parses ISO datetimes as POSIXct and date-only values as IDate
+        dt$datetime <- as.POSIXct(dt$datetime, tz = "UTC")
+      }
     }
 
     dt
