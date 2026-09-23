@@ -3,7 +3,8 @@
 #' concurrently via \code{curl::multi_download()} as compressed `.grib2.gz`
 #' and automatically unzipped after download.
 #'
-#' @param start POSIXct. Start datetime (e.g., from lubridate::ymd_hm).
+#' @param start POSIXct. Start datetime (e.g., from lubridate::ymd_hm). Any
+#'   time zone works; it's converted to UTC to match MRMS file names.
 #' @param end POSIXct. End datetime.
 #' @param destination Character. Directory where downloaded files will be saved.
 #'   Created if it doesn't exist.
@@ -16,7 +17,8 @@
 #'     \item \code{"SHSRHeight"}: Height of Seamless Hybrid Scan Reflectivity (2-minute resolution); sourced from the NOAA MRMS AWS bucket
 #'   }
 #'
-#' @return A list of POSIXct datetimes corresponding to missing or failed downloads.
+#' @return A list of POSIXct datetimes (in UTC) corresponding to missing or
+#'   failed downloads.
 #'
 #' @details
 #' Data are retrieved from the Iowa State Mesonet MRMS archive:
@@ -63,6 +65,14 @@ downloadMRMS <- function(start,
   )
 
   product <- match.arg(product, names(url_product))
+
+  if (!inherits(start, "POSIXct") || !inherits(end, "POSIXct")) {
+    stop("`start` and `end` must be POSIXct datetimes (e.g., from lubridate::ymd_hm).")
+  }
+
+  # MRMS file names are in UTC
+  start <- lubridate::with_tz(start, "UTC")
+  end <- lubridate::with_tz(end, "UTC")
 
   if (!dir.exists(destination)) {
     dir.create(destination, recursive = TRUE)
