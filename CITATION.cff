@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "mrmsR: Download and process MRMS data"
+abstract: >-
+  Tools for downloading NOAA MRMS (Multi-Radar Multi-Sensor) gridded
+  precipitation data and processing it into catchment-scale rainfall
+  time series.
+authors:
+  - family-names: Sears
+    given-names: Megan
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/searsmg/mrmsR"
+keywords:
+  - MRMS
+  - precipitation
+  - radar
+  - hydrology
+  - R
