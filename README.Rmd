@@ -42,12 +42,18 @@ efficient batch and parallel processing.
 
 ## Installation
 
-`mrmsR` is only available on GitHub. Install it, with the vignette built,
-using [pak](https://pak.r-lib.org/):
+`mrmsR` is only available on GitHub. Install the latest version using
+[pak](https://pak.r-lib.org/):
 
 ``` r
 # install.packages("pak")
 pak::pak("searsmg/mrmsR")
+```
+
+To install a specific release (for example, to match a version you've cited):
+
+``` r
+pak::pak("searsmg/mrmsR@v0.1.0")
 ```
 
 ## Example
@@ -84,8 +90,13 @@ files that get downloaded:
 | `SurfacePrecipRate`  | 2 minutes  | Iowa State Mesonet archive |
 | `SHSRHeight`         | 2 minutes  | NOAA MRMS AWS bucket       |
 
-`downloadMRMS()` returns a list of the `POSIXct` timestamps it could not
-download. An empty list means every file in the range downloaded and
+MRMS file names are in UTC. `start` and `end` can be in any time zone
+(e.g., `lubridate::ymd_hm("2025-07-03 14:00", tz = "America/Chicago")`); they're
+converted to UTC before files are requested. `destination` is created if it
+doesn't exist.
+
+`downloadMRMS()` returns a list of the `POSIXct` timestamps (in UTC) it could
+not download. An empty list means every file in the range downloaded and
 unzipped successfully.
 
 ### Example data
@@ -120,6 +131,12 @@ terra::plot(r, main = names(r))
 
 ### Step 3: Zonal statistics per catchment
 
+`zonalMRMS()` computes the mean precipitation within each catchment polygon
+and writes one CSV per raster, named `extract_<year>_<doy>_<hour>_<min>.csv`.
+The `catchment` column comes from the boundary's `site` attribute if it has
+one; use `id_col` to pick a different attribute. Set `n_workers` above 1 to
+process rasters in parallel.
+
 ```{r zonalMRMS}
 csv_dir <- file.path(tempdir(), "mrmsR-readme-csv")
 dir.create(csv_dir, showWarnings = FALSE)
@@ -148,16 +165,28 @@ you catchment-level rainfall totals or hyetographs.
 
 See `vignette("mrmsR")` for more detail on each step.
 
+## Citation
+
+If you use `mrmsR`, please cite it using its Zenodo DOI:
+
+> Sears, M. mrmsR: Download and process MRMS data. Zenodo.
+> <https://doi.org/10.5281/zenodo.22908308>
+
+That DOI always points to the latest release. Each release also has its own
+DOI, listed on the [Zenodo record](https://doi.org/10.5281/zenodo.22908308),
+for citing the exact version you used. GitHub's **Cite this repository**
+button gives the same citation in APA and BibTeX formats.
+
 ## Project status
 
-- This package is **not yet stable or production-ready**
-- Function names, arguments, and outputs may change
-- No guarantee of backward compatibility at this stage
+`mrmsR` is in early development. Version 0.1.0 is the first release.
+
+- Function names, arguments, and outputs may still change between versions
+- Breaking changes are listed in [NEWS.md](NEWS.md)
 
 ### Planned improvements
 
 - Performance optimization for large datasets
-- Improved error handling and input validation
 - Option to pull MRMS either by catchment (boundary) or point
 - Option to summarize by max and other summary stats
 - Review by others
