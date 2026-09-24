@@ -2,9 +2,16 @@
 % Please edit documentation in R/zonalMRMS.R
 \name{zonalMRMS}
 \alias{zonalMRMS}
-\title{Extract zonal mean using boundary from MRMS rasters}
+\title{Extract zonal statistics using boundary from MRMS rasters}
 \usage{
-zonalMRMS(raster_dir, output_dir, boundary, n_workers, id_col = NULL)
+zonalMRMS(
+  raster_dir,
+  output_dir,
+  boundary,
+  n_workers,
+  id_col = NULL,
+  fun = c("mean", "max", "min", "median", "sum")
+)
 }
 \arguments{
 \item{raster_dir}{Directory containing processed \code{.tif} files.}
@@ -21,16 +28,24 @@ parallel workers; each worker reads the boundary itself.}
 label each catchment in the \code{catchment} column. If \code{NULL} (the default),
 uses \code{site} when the boundary has it, otherwise numbers the catchments
 \verb{1, 2, ...} in boundary order.}
+
+\item{fun}{Character. Summary statistic computed over the pixels in each
+catchment: \code{"mean"} (default), \code{"max"}, \code{"min"}, \code{"median"}, or \code{"sum"}.
+The result is written to the \code{p_mmhr} column whichever you choose.}
 }
 \value{
 Invisibly returns NULL
 }
 \description{
-Computes zonal mean precipitation for each raster file over the boundary
-and writes results as CSV files.
+Computes a zonal statistic (the mean by default) of precipitation for each
+raster file over each catchment in the boundary and writes results as CSV
+files.
 }
 \details{
 One CSV is written per raster, named
 \verb{extract_<year>_<doy>_<hour>_<min>.csv} from the timestamp in the raster
 file name.
+
+Pixels touching a catchment boundary are included (\code{touches = TRUE}), and
+\code{NA} pixels are ignored.
 }

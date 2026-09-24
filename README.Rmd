@@ -25,7 +25,7 @@ precipitation data and generating watershed-scale rainfall statistics.
 
 ## Overview
 
-`mrmsR` supports a four-step workflow for turning MRMS gridded precipitation
+`mrmsR` supports a five-step workflow for turning MRMS gridded precipitation
 data into watershed-scale rainfall statistics:
 
 1. **`downloadMRMS()`** — download MRMS GRIB2 files for a time range from the
@@ -36,6 +36,8 @@ data into watershed-scale rainfall statistics:
    catchment in the boundary for every raster, writing one CSV per timestep.
 4. **`combineCSV()`** — combine those per-timestep CSVs into a single,
    datetime-sorted data frame.
+5. **`accumulateMRMS()`** — convert the values to rainfall depths and total
+   them by hour, day, or the whole record.
 
 The package is designed for high-volume hydroclimatic workflows and supports
 efficient batch and parallel processing.
@@ -159,9 +161,23 @@ combined <- combineCSV(csv_dir)
 combined
 ```
 
-From here, `combined` is a normal data frame — grouping by `catchment` and
-summarizing over `datetime` with your usual `dplyr`/`tidyr` tools will get
-you catchment-level rainfall totals or hyetographs.
+`combined` is a normal data frame, so you can also work with it directly
+using your usual `dplyr`/`tidyr` tools, e.g. to plot hyetographs.
+
+### Step 5: Accumulating rainfall totals
+
+`accumulateMRMS()` turns per-timestep values into rainfall depths (mm) and
+totals them for each catchment by `"hour"`, `"day"`, or `"total"`. It
+handles the unit conversion for each product: `SurfacePrecipRate` is a rate
+in mm/hr every 2 minutes, while the hourly QPE products are already depths.
+Use `tz` to total by local days instead of UTC days.
+
+```{r accumulateMRMS}
+accumulateMRMS(combined, product = "RadarOnlyQPE", by = "total")
+```
+
+`n_steps` counts the timesteps that went into each total and `expected_steps`
+is how many a complete period has, so you can spot gaps in the data.
 
 See `vignette("mrmsR")` for more detail on each step.
 
@@ -188,5 +204,4 @@ button gives the same citation in APA and BibTeX formats.
 
 - Performance optimization for large datasets
 - Option to pull MRMS either by catchment (boundary) or point
-- Option to summarize by max and other summary stats
 - Review by others

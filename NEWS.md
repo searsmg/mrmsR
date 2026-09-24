@@ -1,3 +1,15 @@
+# mrmsR (development version)
+
+## New features
+
+* New `accumulateMRMS()` converts per-timestep values to rainfall depths and
+  totals them by hour, day, or the whole record. It converts
+  `SurfacePrecipRate` rates (mm/hr) to depths, assigns each value to the
+  interval ending at its timestamp, supports local-time days via `tz`, and
+  reports `n_steps` vs. `expected_steps` to flag gaps.
+* `zonalMRMS()` gains `fun` to compute the `"max"`, `"min"`, `"median"`, or
+  `"sum"` over each catchment instead of the mean.
+
 # mrmsR 0.1.0
 
 First release. `mrmsR` provides a four-step workflow for turning MRMS

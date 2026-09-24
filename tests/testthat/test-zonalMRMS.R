@@ -109,3 +109,29 @@ test_that("zonalMRMS errors when id_col isn't in the boundary", {
     "is not a column in the boundary"
   )
 })
+
+test_that("zonalMRMS computes the requested summary statistic", {
+  boundary <- test_path("catchments_all_lidar.shp")
+  tif <- list.files(test_path("processedTIF"), full.names = TRUE)[1]
+  raster_dir <- withr::local_tempdir()
+  file.copy(tif, raster_dir)
+
+  for (stat in c("max", "sum")) {
+    output_dir <- withr::local_tempdir()
+    zonalMRMS(raster_dir, output_dir, boundary, n_workers = 1, fun = stat)
+    df <- utils::read.csv(list.files(output_dir, full.names = TRUE))
+
+    r <- terra::rast(tif)
+    b <- terra::project(terra::vect(boundary), terra::crs(r))
+    expected <- terra::extract(r, b, fun = match.fun(stat), na.rm = TRUE, touches = TRUE)[[2]]
+    expect_equal(df$p_mmhr, expected, tolerance = 1e-6)
+  }
+})
+
+test_that("zonalMRMS rejects unknown summary statistics", {
+  expect_error(
+    zonalMRMS(test_path("processedTIF"), withr::local_tempdir(),
+              test_path("catchments_all_lidar.shp"), n_workers = 1, fun = "average"),
+    "should be one of"
+  )
+})

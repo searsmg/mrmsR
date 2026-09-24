@@ -1,6 +1,6 @@
 Package: mrmsR
 Title: Download and process MRMS data
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: 
     person("Megan", "Sears", , "searsmg1@gmail.com", role = c("aut", "cre"))
 Description: Package used to download and process MRMS data.
@@ -17,6 +17,7 @@ Imports:
     lubridate,
     purrr,
     R.utils,
+    stats,
     stringr,
     terra,
     utils

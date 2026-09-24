@@ -14,7 +14,7 @@ precipitation data and generating watershed-scale rainfall statistics.
 
 ## Overview
 
-`mrmsR` supports a four-step workflow for turning MRMS gridded
+`mrmsR` supports a five-step workflow for turning MRMS gridded
 precipitation data into watershed-scale rainfall statistics:
 
 1.  **`downloadMRMS()`** — download MRMS GRIB2 files for a time range
@@ -27,6 +27,8 @@ precipitation data into watershed-scale rainfall statistics:
     timestep.
 4.  **`combineCSV()`** — combine those per-timestep CSVs into a single,
     datetime-sorted data frame.
+5.  **`accumulateMRMS()`** — convert the values to rainfall depths and
+    total them by hour, day, or the whole record.
 
 The package is designed for high-volume hydroclimatic workflows and
 supports efficient batch and parallel processing.
@@ -218,9 +220,51 @@ combined
 #>     <int>        <num>     <char>              <POSc> <int> <int> <int> <int>
 ```
 
-From here, `combined` is a normal data frame — grouping by `catchment`
-and summarizing over `datetime` with your usual `dplyr`/`tidyr` tools
-will get you catchment-level rainfall totals or hyetographs.
+`combined` is a normal data frame, so you can also work with it directly
+using your usual `dplyr`/`tidyr` tools, e.g. to plot hyetographs.
+
+### Step 5: Accumulating rainfall totals
+
+`accumulateMRMS()` turns per-timestep values into rainfall depths (mm)
+and totals them for each catchment by `"hour"`, `"day"`, or `"total"`.
+It handles the unit conversion for each product: `SurfacePrecipRate` is
+a rate in mm/hr every 2 minutes, while the hourly QPE products are
+already depths. Use `tz` to total by local days instead of UTC days.
+
+``` r
+accumulateMRMS(combined, product = "RadarOnlyQPE", by = "total")
+#>     catchment        period_start     depth_mm n_steps expected_steps
+#> 1       aspen 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 2     bighorn 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 3         bl4 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 4        dadd 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 5         dry 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 6          hm 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 7         hum 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 8          lm 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 9         lpm 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 10        lum 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 11         ME 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 12   michigan 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 13         mm 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 14         MM 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 15 montgomery 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 16        mpm 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 17   mtcampus 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 18        mub 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 19        mum 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 20         MW 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 21         p1 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 22         p2 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 23         UE 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 24         UM 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 25         UW 2025-01-01 01:00:00 8.940697e-08       2             NA
+#> 26    washout 2025-01-01 01:00:00 8.940697e-08       2             NA
+```
+
+`n_steps` counts the timesteps that went into each total and
+`expected_steps` is how many a complete period has, so you can spot gaps
+in the data.
 
 See `vignette("mrmsR")` for more detail on each step.
 
@@ -249,5 +293,4 @@ same citation in APA and BibTeX formats.
 
 - Performance optimization for large datasets
 - Option to pull MRMS either by catchment (boundary) or point
-- Option to summarize by max and other summary stats
 - Review by others
